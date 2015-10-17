@@ -1,0 +1,44 @@
+#!/usr/bin/env ruby
+
+require 'optparse'
+
+PREFIX = 'SMART'
+
+monitor_values = []
+monitor_raws = []
+
+OptionParser.new do |opt|
+  opt.on('--value ATTR') {|v| monitor_values.push(*v.split(',').map(&:to_i)) }
+  opt.on('--raw ATTR') {|v| monitor_raws.push(*v.split(',').map(&:to_i)) }
+  opt.parse!(ARGV)
+end
+
+# collect all hard drives
+disks = Dir['/dev/sd*'].reject {|p| p =~ /\d\z/ }
+
+disks.each do |disk_path|
+  disk_name = File.basename(disk_path)
+
+  now = Time.now.to_i
+  smart_attrs = %x{smartctl -A #{disk_path}}.lines.map(&:strip).reject(&:empty?)
+                .drop_while {|l| l !~ /^ID#/ }.drop(1).map {|l| l.split(/\s+/, 11) }
+
+  # 0   1              2    3     4     5      6    7       8           9
+  # ID# ATTRIBUTE_NAME FLAG VALUE WORST THRESH TYPE UPDATED WHEN_FAILED RAW_VALUE
+
+  smart_attrs.each do |attr|
+    attr_id = attr[0].to_i
+    attr_name = attr[1]
+
+    attr_value = attr[3]
+    attr_raw = attr[9]
+
+    if monitor_values.include?(attr_id)
+      puts [[PREFIX, attr_name, disk_name].join(?.), attr_value, now].join(?\t)
+    end
+
+    if monitor_raws.include?(attr_id)
+      puts [[PREFIX, attr_name, disk_name].join(?.), attr_raw, now].join(?\t)
+    end
+  end
+end
