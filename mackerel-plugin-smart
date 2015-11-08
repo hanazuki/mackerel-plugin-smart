@@ -8,8 +8,8 @@ monitor_values = []
 monitor_raws = []
 
 OptionParser.new do |opt|
-  opt.on('--value ATTR') {|v| monitor_values.push(*v.split(',').map(&:to_i)) }
-  opt.on('--raw ATTR') {|v| monitor_raws.push(*v.split(',').map(&:to_i)) }
+  opt.on('--value ATTRS', 'List of attribute IDs to monitor normalized value') {|v| monitor_values.push(*v.split(',').map(&:to_i)) }
+  opt.on('--raw ATTRS', 'List of attribute IDs to monitor raw value') {|v| monitor_raws.push(*v.split(',').map(&:to_i)) }
   opt.parse!(ARGV)
 end
 
